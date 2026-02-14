@@ -1,0 +1,39 @@
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+dist/
+*.egg-info/
+*.egg
+
+# Virtual environments
+.env
+.env.*
+.venv/
+venv/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Testing
+.coverage
+.pytest_cache/
+htmlcov/
+
+# Ruff / MyPy
+.ruff_cache/
+.mypy_cache/
+.dmypy.json
+
+# Misc
+.DS_Store
+*.log
+
+# Claude
+.claude/
+.mcpregistry_*
