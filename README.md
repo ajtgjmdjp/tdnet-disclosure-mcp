@@ -1,11 +1,13 @@
-# TDNET Disclosure MCP
+# tdnet-disclosure-mcp
 
 [![CI](https://github.com/ajtgjmdjp/tdnet-disclosure-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/ajtgjmdjp/tdnet-disclosure-mcp/actions/workflows/ci.yml)
 [![PyPI version](https://badge.fury.io/py/tdnet-disclosure-mcp.svg)](https://pypi.org/project/tdnet-disclosure-mcp/)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
-MCP (Model Context Protocol) server for TDNET timely disclosures (適時開示) from the Tokyo Stock Exchange.
+[Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server for **TDNET timely disclosures (適時開示)** from the Tokyo Stock Exchange (JPX/TSE). Access earnings reports (決算短信), dividend announcements, buyback disclosures, forecast revisions, and more — no API key required.
+
+Part of the [Japan Finance Data Stack](https://github.com/ajtgjmdjp/awesome-japan-finance-data): [edinet-mcp](https://github.com/ajtgjmdjp/edinet-mcp) (securities filings) | **tdnet-disclosure-mcp** (timely disclosures) | [estat-mcp](https://github.com/ajtgjmdjp/estat-mcp) (government statistics) | [boj-mcp](https://github.com/ajtgjmdjp/boj-mcp) (Bank of Japan) | [japan-news-mcp](https://github.com/ajtgjmdjp/japan-news-mcp) (financial news) | [jquants-mcp](https://github.com/ajtgjmdjp/jquants-mcp) (stock prices)
 
 ## Features
 
