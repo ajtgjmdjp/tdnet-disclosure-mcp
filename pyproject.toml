@@ -1,6 +1,6 @@
 [project]
 name = "tdnet-disclosure-mcp"
-version = "0.1.0"
+version = "0.1.1"
 description = "MCP server for TDNET timely disclosures (適時開示) - earnings, dividends, M&A, buybacks"
 readme = "README.md"
 license = "Apache-2.0"

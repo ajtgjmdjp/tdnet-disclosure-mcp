@@ -153,6 +153,7 @@ async def get_disclosures_by_date(
         str,
         Field(
             description="Date in YYYY-MM-DD format",
+            pattern=r"^\d{4}-\d{2}-\d{2}$",
             max_length=10,
         ),
     ],

@@ -101,9 +101,13 @@ Parameters:
 | governance | ガバナンス | Corporate governance, board changes |
 | other | その他 | Other disclosures |
 
-## Data Source
+## Data Attribution & Disclaimer
 
 Data is provided by the [Yanoshin Web API](https://webapi.yanoshin.jp/tdnet/), which mirrors TDNET (Tokyo Stock Exchange timely disclosure system). Only the last ~30 days of data are available.
+
+> **Disclaimer**: This project is not affiliated with JPX/TSE or Yanoshin.
+> Please be respectful of API rate limits.
+> Data accuracy is not guaranteed — verify against official TDNET sources.
 
 ## License
 

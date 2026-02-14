@@ -1,3 +1,5 @@
+# Data source: TDNET via Yanoshin Web API (https://webapi.yanoshin.jp/tdnet/)
+# Attribution: 適時開示情報閲覧サービス (Yanoshin)
 """Async client for TDNET disclosures via Yanoshin API.
 
 Data source: https://webapi.yanoshin.jp/tdnet/
@@ -7,7 +9,9 @@ No authentication required.
 
 from __future__ import annotations
 
+import asyncio
 import re
+import time as _time
 from typing import TYPE_CHECKING, Any, cast
 
 if TYPE_CHECKING:
@@ -25,11 +29,34 @@ _BASE_URL = "https://webapi.yanoshin.jp/webapi/tdnet/list"
 # HTTP timeout
 _DEFAULT_TIMEOUT = 30.0
 
+# Retryable HTTP status codes
+_RETRYABLE_STATUS = {429, 500, 502, 503, 504}
+
+# Max retry attempts
+_MAX_RETRIES = 3
+
 # Valid code pattern (4-digit stock code)
 _VALID_CODE_RE = re.compile(r"^\d{4}$")
 
 # Max results per request
 _MAX_LIMIT = 300
+
+
+class _RateLimiter:
+    """Simple rate limiter using monotonic clock."""
+
+    def __init__(self, rate: float = 1.0) -> None:
+        self._interval = 1.0 / rate if rate > 0 else 0.0
+        self._last: float = 0.0
+        self._lock = asyncio.Lock()
+
+    async def wait(self) -> None:
+        async with self._lock:
+            now = _time.monotonic()
+            elapsed = now - self._last
+            if elapsed < self._interval:
+                await asyncio.sleep(self._interval - elapsed)
+            self._last = _time.monotonic()
 
 
 class TdnetClient:
@@ -44,6 +71,7 @@ class TdnetClient:
     def __init__(self, timeout: float = _DEFAULT_TIMEOUT) -> None:
         self._timeout = timeout
         self._http: httpx.AsyncClient | None = None
+        self._limiter = _RateLimiter(1.0)
 
     def _get_http_client(self) -> httpx.AsyncClient:
         """Get or create the HTTP client."""
@@ -67,14 +95,34 @@ class TdnetClient:
         await self.close()
 
     async def _api_get(self, path: str, params: dict[str, str] | None = None) -> dict[str, Any]:
-        """Make API GET request."""
+        """Make API GET request with retry and rate limiting."""
         client = self._get_http_client()
         url = f"{_BASE_URL}/{path}"
-        logger.debug(f"GET {url}")
+        last_exc: BaseException | None = None
 
-        resp = await client.get(url, params=params)
-        resp.raise_for_status()
-        return cast("dict[str, Any]", resp.json())
+        for attempt in range(_MAX_RETRIES):
+            await self._limiter.wait()
+            logger.debug(f"GET {url} (attempt {attempt + 1})")
+            try:
+                resp = await client.get(url, params=params)
+                if resp.status_code in _RETRYABLE_STATUS:
+                    last_exc = httpx.HTTPStatusError(
+                        f"HTTP {resp.status_code}",
+                        request=resp.request,
+                        response=resp,
+                    )
+                else:
+                    resp.raise_for_status()
+                    return cast("dict[str, Any]", resp.json())
+            except httpx.TimeoutException as e:
+                last_exc = e
+
+            if attempt < _MAX_RETRIES - 1:
+                delay = 2**attempt
+                logger.warning(f"Retry {attempt + 1}/{_MAX_RETRIES} for {url} after {delay}s")
+                await asyncio.sleep(delay)
+
+        raise last_exc  # type: ignore[misc]
 
     async def get_recent(self, limit: int = 50) -> DisclosureList:
         """Get most recent disclosures.

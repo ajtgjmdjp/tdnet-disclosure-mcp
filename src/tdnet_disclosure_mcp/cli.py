@@ -113,8 +113,16 @@ def by_date(target_date: str, json_output: bool) -> None:
     """Get disclosures for a specific date (YYYY-MM-DD)."""
 
     async def _by_date() -> None:
-        async with TdnetClient() as client:
+        try:
             parsed = date.fromisoformat(target_date)
+        except ValueError:
+            click.echo(
+                f"Error: Invalid date format: {target_date!r}. Expected YYYY-MM-DD.",
+                err=True,
+            )
+            sys.exit(1)
+
+        async with TdnetClient() as client:
             result = await client.get_by_date(parsed)
 
             if json_output:
