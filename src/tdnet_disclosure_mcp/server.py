@@ -26,9 +26,17 @@ if TYPE_CHECKING:
     from collections.abc import AsyncIterator
 
 from fastmcp import FastMCP
-from pydantic import Field
+from pydantic import BeforeValidator, Field
 
 from tdnet_disclosure_mcp.client import TdnetClient
+
+
+def _coerce_str(v: Any) -> str | None:
+    """Coerce int to str — MCP clients may send numeric values as int."""
+    if v is None:
+        return None
+    return str(v)
+
 
 # Lazily initialized client
 _client: TdnetClient | None = None
@@ -124,6 +132,7 @@ async def search_disclosures(
 async def get_company_disclosures(
     code: Annotated[
         str,
+        BeforeValidator(_coerce_str),
         Field(
             description="4-digit stock code (e.g., '7203' for Toyota)",
             pattern=r"^\d{4}$",

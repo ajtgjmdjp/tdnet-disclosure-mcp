@@ -32,6 +32,9 @@ _DEFAULT_TIMEOUT = 30.0
 # Retryable HTTP status codes
 _RETRYABLE_STATUS = {429, 500, 502, 503, 504}
 
+# Non-retryable HTTP status codes — raise immediately
+_NON_RETRYABLE_STATUS = {401, 403, 404}
+
 # Max retry attempts
 _MAX_RETRIES = 3
 
@@ -105,7 +108,9 @@ class TdnetClient:
             logger.debug(f"GET {url} (attempt {attempt + 1})")
             try:
                 resp = await client.get(url, params=params)
-                if resp.status_code in _RETRYABLE_STATUS:
+                if resp.status_code in _NON_RETRYABLE_STATUS:
+                    resp.raise_for_status()
+                elif resp.status_code in _RETRYABLE_STATUS:
                     last_exc = httpx.HTTPStatusError(
                         f"HTTP {resp.status_code}",
                         request=resp.request,
