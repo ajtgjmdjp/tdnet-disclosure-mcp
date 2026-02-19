@@ -7,7 +7,7 @@
 
 [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server for **TDNET timely disclosures (適時開示)** from the Tokyo Stock Exchange (JPX/TSE). Access earnings reports (決算短信), dividend announcements, buyback disclosures, forecast revisions, and more — no API key required.
 
-Part of the [Japan Finance Data Stack](https://github.com/ajtgjmdjp/awesome-japan-finance-data): [edinet-mcp](https://github.com/ajtgjmdjp/edinet-mcp) (securities filings) | **tdnet-disclosure-mcp** (timely disclosures) | [estat-mcp](https://github.com/ajtgjmdjp/estat-mcp) (government statistics) | [boj-mcp](https://github.com/ajtgjmdjp/boj-mcp) (Bank of Japan) | [japan-news-mcp](https://github.com/ajtgjmdjp/japan-news-mcp) (financial news) | [jquants-mcp](https://github.com/ajtgjmdjp/jquants-mcp) (stock prices)
+Part of the [Japan Finance Data Stack](https://github.com/ajtgjmdjp/awesome-japan-finance-data): [edinet-mcp](https://github.com/ajtgjmdjp/edinet-mcp) (securities filings) | **tdnet-disclosure-mcp** (timely disclosures) | [estat-mcp](https://github.com/ajtgjmdjp/estat-mcp) (government statistics) | [boj-mcp](https://github.com/ajtgjmdjp/boj-mcp) (Bank of Japan) | [stockprice-mcp](https://github.com/ajtgjmdjp/stockprice-mcp) (stock prices & FX)
 
 ## Features
 
