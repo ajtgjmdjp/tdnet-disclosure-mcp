@@ -9,6 +9,10 @@
 
 Part of the [Japan Finance Data Stack](https://github.com/ajtgjmdjp/awesome-japan-finance-data): [edinet-mcp](https://github.com/ajtgjmdjp/edinet-mcp) (securities filings) | **tdnet-disclosure-mcp** (timely disclosures) | [estat-mcp](https://github.com/ajtgjmdjp/estat-mcp) (government statistics) | [boj-mcp](https://github.com/ajtgjmdjp/boj-mcp) (Bank of Japan) | [stockprice-mcp](https://github.com/ajtgjmdjp/stockprice-mcp) (stock prices & FX)
 
+<a href="https://glama.ai/mcp/servers/@ajtgjmdjp/tdnet-disclosure-mcp">
+  <img width="380" height="200" src="https://glama.ai/mcp/servers/@ajtgjmdjp/tdnet-disclosure-mcp/badge" alt="tdnet-disclosure-mcp MCP server" />
+</a>
+
 ## Features
 
 - **4 MCP Tools**: get_latest_disclosures, search_disclosures, get_company_disclosures, get_disclosures_by_date
