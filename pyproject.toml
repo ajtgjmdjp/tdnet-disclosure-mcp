@@ -1,6 +1,6 @@
 [project]
 name = "tdnet-disclosure-mcp"
-version = "0.1.2"
+version = "0.2.0"
 description = "MCP server for TDNET timely disclosures (適時開示) - earnings, dividends, M&A, buybacks"
 readme = "README.md"
 license = "Apache-2.0"
@@ -22,7 +22,6 @@ dependencies = [
     "pydantic>=2.0",
     "fastmcp>=2.0,<3.0",
     "click>=8.0",
-    "loguru>=0.7",
 ]
 
 [project.optional-dependencies]

@@ -17,11 +17,14 @@ from typing import TYPE_CHECKING, Any, cast
 if TYPE_CHECKING:
     from datetime import date
 
+import logging
+
 import httpx
-from loguru import logger
 from pydantic import ValidationError
 
 from tdnet_disclosure_mcp.models import Disclosure, DisclosureList
+
+logger = logging.getLogger(__name__)
 
 # Yanoshin API base URL
 _BASE_URL = "https://webapi.yanoshin.jp/webapi/tdnet/list"
@@ -38,8 +41,8 @@ _NON_RETRYABLE_STATUS = {401, 403, 404}
 # Max retry attempts
 _MAX_RETRIES = 3
 
-# Valid code pattern (4-digit stock code)
-_VALID_CODE_RE = re.compile(r"^\d{4}$")
+# Valid code pattern — 4-char code; alphanumeric since 2024 (e.g. "130A")
+_VALID_CODE_RE = re.compile(r"^[0-9A-Z]{4}$")
 
 # Max results per request
 _MAX_LIMIT = 300
@@ -60,6 +63,10 @@ class _RateLimiter:
             if elapsed < self._interval:
                 await asyncio.sleep(self._interval - elapsed)
             self._last = _time.monotonic()
+
+
+class TdnetAPIError(Exception):
+    """Raised when the Yanoshin API returns an unexpected response."""
 
 
 class TdnetClient:
@@ -118,8 +125,16 @@ class TdnetClient:
                     )
                 else:
                     resp.raise_for_status()
-                    return cast("dict[str, Any]", resp.json())
-            except httpx.TimeoutException as e:
+                    try:
+                        return cast("dict[str, Any]", resp.json())
+                    except ValueError as e:
+                        # HTTP 200 with a non-JSON body (e.g. an HTML error
+                        # page) must surface as a clean API error
+                        msg = f"non-JSON response from {url}"
+                        raise TdnetAPIError(msg) from e
+            except httpx.TransportError as e:
+                # Includes timeouts AND transient network failures
+                # (ConnectError, ReadError) — all worth retrying
                 last_exc = e
 
             if attempt < _MAX_RETRIES - 1:
@@ -127,7 +142,8 @@ class TdnetClient:
                 logger.warning(f"Retry {attempt + 1}/{_MAX_RETRIES} for {url} after {delay}s")
                 await asyncio.sleep(delay)
 
-        raise last_exc  # type: ignore[misc]
+        msg = f"request failed after {_MAX_RETRIES} attempts: {url}"
+        raise TdnetAPIError(msg) from last_exc
 
     async def get_recent(self, limit: int = 50) -> DisclosureList:
         """Get most recent disclosures.
@@ -184,8 +200,10 @@ class TdnetClient:
         Returns:
             List of disclosures for the company.
         """
+        code = code.upper()
         if not _VALID_CODE_RE.match(code):
-            raise ValueError(f"Invalid stock code: {code!r} (must be 4 digits)")
+            msg = f"Invalid stock code: {code!r} (must be 4 alphanumeric characters)"
+            raise ValueError(msg)
 
         limit = min(max(1, limit), _MAX_LIMIT)
         data = await self._api_get(f"{code}.json", {"limit": str(limit)})
@@ -230,7 +248,7 @@ class TdnetClient:
         try:
             data = await self._api_get("recent.json", {"limit": "1"})
             return "items" in data
-        except (httpx.HTTPError, KeyError):
+        except (httpx.HTTPError, TdnetAPIError, KeyError):
             return False
 
     def _parse_response(self, data: dict[str, Any]) -> DisclosureList:

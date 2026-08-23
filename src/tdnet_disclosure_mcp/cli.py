@@ -4,11 +4,11 @@ from __future__ import annotations
 
 import asyncio
 import json
+import logging
 import sys
 from datetime import date
 
 import click
-from loguru import logger
 
 from tdnet_disclosure_mcp import __version__
 from tdnet_disclosure_mcp.client import TdnetClient
@@ -18,12 +18,11 @@ from tdnet_disclosure_mcp.client import TdnetClient
 @click.option("--verbose", "-v", is_flag=True, help="Enable verbose logging")
 def cli(verbose: bool) -> None:
     """TDNET Disclosure MCP - Japanese timely disclosure tool."""
-    if verbose:
-        logger.remove()
-        logger.add(sys.stderr, level="DEBUG")
-    else:
-        logger.remove()
-        logger.add(sys.stderr, level="WARNING")
+    level = logging.DEBUG if verbose else logging.WARNING
+    logging.basicConfig(
+        level=level, stream=sys.stderr, format="%(levelname)s %(name)s: %(message)s"
+    )
+    logging.getLogger("tdnet_disclosure_mcp").setLevel(level)
 
 
 @cli.command()

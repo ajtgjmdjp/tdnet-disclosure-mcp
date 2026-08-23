@@ -59,7 +59,7 @@ class Disclosure(BaseModel):
 
     id: str = Field(..., max_length=20)
     pubdate: datetime
-    company_code: str = Field(..., pattern=r"^\d{4,5}$", max_length=5)
+    company_code: str = Field(..., pattern=r"^[0-9A-Z]{4,5}$", max_length=5)
     company_name: str = Field(..., max_length=200)
     title: str = Field(..., max_length=500)
     document_url: str | None = Field(None, max_length=500)
@@ -79,9 +79,15 @@ class Disclosure(BaseModel):
         code = code_raw[:4] if len(code_raw) == 5 else code_raw
         title = tdnet.get("title", "")
 
+        pubdate_raw = tdnet.get("pubdate")
+        if not pubdate_raw:
+            # 日付を捏造しない — 欠損は呼び出し側の skip 対象
+            msg = "disclosure item has no pubdate"
+            raise ValueError(msg)
+
         return cls(
             id=str(tdnet.get("id", "")),
-            pubdate=datetime.fromisoformat(tdnet.get("pubdate", "2000-01-01")),
+            pubdate=datetime.fromisoformat(pubdate_raw),
             company_code=code,
             company_name=tdnet.get("company_name", "").strip(),
             title=title,
@@ -120,6 +126,7 @@ class DisclosureList(BaseModel):
                     "title": d.title,
                     "category": d.category.value,
                     "document_url": d.document_url,
+                    "xbrl_url": d.xbrl_url,
                     "exchange": d.exchange,
                 }
                 for d in self.disclosures

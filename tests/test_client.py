@@ -1,12 +1,14 @@
 """Tests for tdnet-disclosure-mcp client."""
 
 from datetime import date
+from unittest.mock import AsyncMock, MagicMock
 
 import httpx
 import pytest
 import respx
 
-from tdnet_disclosure_mcp.client import TdnetClient
+from tdnet_disclosure_mcp.client import TdnetAPIError, TdnetClient
+from tdnet_disclosure_mcp.models import Disclosure
 
 _SAMPLE_RESPONSE = {
     "total_count": 2,
@@ -145,12 +147,12 @@ class TestTdnetClientByCode:
 
     async def test_get_by_code_invalid(self) -> None:
         async with TdnetClient() as client:
-            with pytest.raises(ValueError, match="4 digits"):
+            with pytest.raises(ValueError, match="4 alphanumeric"):
                 await client.get_by_code("ABC")
 
     async def test_get_by_code_too_long(self) -> None:
         async with TdnetClient() as client:
-            with pytest.raises(ValueError, match="4 digits"):
+            with pytest.raises(ValueError, match="4 alphanumeric"):
                 await client.get_by_code("72030")
 
 
@@ -262,3 +264,108 @@ class TestTdnetClientCategoryParsing:
 
         assert result.disclosures[0].category.value == "earnings"
         assert result.disclosures[1].category.value == "dividend"
+
+
+class TestAlphanumericCodes:
+    """2024年以降の英文字入り証券コード (130A 等) 対応。"""
+
+    async def test_get_by_code_accepts_alphanumeric(self) -> None:
+        client = TdnetClient()
+        client._api_get = AsyncMock(return_value={"items": [], "total_count": 0})  # type: ignore[method-assign]
+        result = await client.get_by_code("130A")
+        assert result.total_count == 0  # ValueError にならないこと
+
+    async def test_get_by_code_normalizes_lowercase(self) -> None:
+        client = TdnetClient()
+        client._api_get = AsyncMock(return_value={"items": [], "total_count": 0})  # type: ignore[method-assign]
+        await client.get_by_code("130a")
+        client._api_get.assert_awaited_once()
+        assert client._api_get.await_args.args[0] == "130A.json"
+
+    async def test_invalid_code_still_rejected(self) -> None:
+        client = TdnetClient()
+        with pytest.raises(ValueError):
+            await client.get_by_code("13")
+        with pytest.raises(ValueError):
+            await client.get_by_code("130AB")
+
+
+class TestDisclosureModelHardening:
+    def test_alphanumeric_company_code_accepted(self) -> None:
+        d = Disclosure.from_api(
+            {
+                "Tdnet": {
+                    "id": "X1",
+                    "pubdate": "2026-08-23 15:00:00",
+                    "company_code": "130A0",
+                    "company_name": "テスト社",
+                    "title": "決算短信",
+                }
+            }
+        )
+        assert d.company_code == "130A"
+
+    def test_missing_pubdate_raises_not_fabricates(self) -> None:
+        # 欠損日付を 2000-01-01 として捏造しない
+        with pytest.raises((ValueError, KeyError)):
+            Disclosure.from_api(
+                {
+                    "Tdnet": {
+                        "id": "X2",
+                        "company_code": "72030",
+                        "company_name": "テスト社",
+                        "title": "お知らせ",
+                    }
+                }
+            )
+
+
+class TestRetryOnTransportErrors:
+    async def test_connect_error_is_retried(self) -> None:
+        client = TdnetClient()
+        calls = {"n": 0}
+
+        class _Resp:
+            status_code = 200
+
+            @staticmethod
+            def raise_for_status() -> None: ...
+
+            @staticmethod
+            def json() -> dict:
+                return {"items": [], "total_count": 0}
+
+        async def flaky_get(url, params=None):
+            calls["n"] += 1
+            if calls["n"] == 1:
+                raise httpx.ConnectError("refused")
+            return _Resp()
+
+        http = MagicMock()
+        http.get = flaky_get
+        client._http = http
+        data = await client._api_get("recent.json")
+        assert calls["n"] == 2
+        assert data == {"items": [], "total_count": 0}
+
+    async def test_non_json_body_raises_clean_error(self) -> None:
+        client = TdnetClient()
+
+        class _Resp:
+            status_code = 200
+
+            @staticmethod
+            def raise_for_status() -> None: ...
+
+            @staticmethod
+            def json() -> dict:
+                raise ValueError("not json")
+
+        async def get(url, params=None):
+            return _Resp()
+
+        http = MagicMock()
+        http.get = get
+        client._http = http
+        with pytest.raises(TdnetAPIError):
+            await client._api_get("recent.json")
